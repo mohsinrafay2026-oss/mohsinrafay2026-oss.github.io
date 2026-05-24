@@ -465,6 +465,22 @@ body::before {
   .cs-item:last-child { border-bottom: none; }
 }
 </style>
+<script>
+// Emergency: hide loading screen after 1.5s if JS init fails for any reason
+window._emergencyTimer = setTimeout(function() {
+  var loading = document.getElementById("screen-loading");
+  var entry   = document.getElementById("screen-entry");
+  if (loading && loading.classList.contains("active")) {
+    loading.classList.remove("active");
+    if (entry) entry.classList.add("active");
+    var noId = document.getElementById("entry-no-id");
+    var params = new URLSearchParams(location.search);
+    if (!params.get("id") && !params.get("quiz") && noId) {
+      noId.style.display = "block";
+    }
+  }
+}, 1500);
+</script>
 </head>
 <body>
 
@@ -693,7 +709,8 @@ const MIN_WATCH_SECS = 30; // students must watch at least 30s
 // ── Screen helper ───────────────────────────────────────────
 function showScreen(name) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById("screen-" + name).classList.add("active");
+  var el = document.getElementById("screen-" + name);
+  if (el) el.classList.add("active");
   window.scrollTo(0,0);
 }
 
@@ -739,8 +756,18 @@ window.addEventListener("DOMContentLoaded", () => {
     if (stored) BACKEND = stored;
   }
 
+  // SAFETY NET: always show entry within 800ms no matter what
+  // This prevents the loading screen from getting stuck
+  const safetyTimer = setTimeout(function() {
+    showScreen("entry");
+    if (!QUIZ_ID) {
+      document.getElementById("entry-no-id").style.display = "block";
+    }
+  }, 800);
+
   // Show entry screen right away — don't wait for network
   showScreen("entry");
+  clearTimeout(safetyTimer);
 
   if (QUIZ_ID && BACKEND) {
     // Check localStorage cache first (instant if student returns)
