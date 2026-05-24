@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>QuizTube — Take Your Quiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
@@ -465,22 +465,6 @@ body::before {
   .cs-item:last-child { border-bottom: none; }
 }
 </style>
-<script>
-// Emergency: hide loading screen after 1.5s if JS init fails for any reason
-window._emergencyTimer = setTimeout(function() {
-  var loading = document.getElementById("screen-loading");
-  var entry   = document.getElementById("screen-entry");
-  if (loading && loading.classList.contains("active")) {
-    loading.classList.remove("active");
-    if (entry) entry.classList.add("active");
-    var noId = document.getElementById("entry-no-id");
-    var params = new URLSearchParams(location.search);
-    if (!params.get("id") && !params.get("quiz") && noId) {
-      noId.style.display = "block";
-    }
-  }
-}, 1500);
-</script>
 </head>
 <body>
 
@@ -685,6 +669,7 @@ window._emergencyTimer = setTimeout(function() {
 
 <!-- YouTube IFrame API -->
 <script src="https://www.youtube.com/iframe_api"></script>
+
 <script>
 // ── Config (set via URL param or hardcode) ──────────────────
 const BACKEND = localStorage.getItem("qt_backend") || "";
@@ -728,95 +713,91 @@ async function api(action, body={}) {
 }
 
 // ── Init ────────────────────────────────────────────────────
-// ── Quiz promise — starts fetching IMMEDIATELY on page load ──
-// This runs before student even enters their name, so by the time
-// they click Start the data is already ready.
-let quizPromise = null;
+// ── Initialization ───────────────────────────────────────────
+// Runs after full DOM is ready
+var quizPromise = null;
 
+window.addEventListener("DOMContentLoaded", function() {
 
-// ── Warmup ping — fires 500ms after page load ─────────────────
-// Google Apps Script has a cold-start delay of 5-10s on first request.
-// This silent ping fires as soon as the page loads so the server is
-// warm by the time the student clicks "Begin Quiz".
-setTimeout(function() {
-  var b = localStorage.getItem("qt_backend") || BACKEND;
-  if (b) {
-    fetch(b + "?action=ping", {
-      method: "POST",
-      body: JSON.stringify({ action: "ping" }),
-      redirect: "follow"
-    }).catch(function() {}); // ignore — just warming up
-  }
-}, 500);
-
-window.addEventListener("DOMContentLoaded", () => {
-  // Resolve backend
+  // 1. Resolve backend URL
   if (!BACKEND) {
-    const stored = localStorage.getItem("qt_backend");
+    var stored = localStorage.getItem("qt_backend");
     if (stored) BACKEND = stored;
   }
 
-  // SAFETY NET: always show entry within 800ms no matter what
-  // This prevents the loading screen from getting stuck
-  const safetyTimer = setTimeout(function() {
-    showScreen("entry");
-    if (!QUIZ_ID) {
-      document.getElementById("entry-no-id").style.display = "block";
-    }
-  }, 800);
-
-  // Show entry screen right away — don't wait for network
+  // 2. Always show entry screen immediately — never stay on loading
   showScreen("entry");
-  clearTimeout(safetyTimer);
+  clearTimeout(window._safetyTimer);
 
-  if (QUIZ_ID && BACKEND) {
-    // Check localStorage cache first (instant if student returns)
-    const cacheKey = "quiz_cache_" + QUIZ_ID;
-    const cached   = localStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        quiz = JSON.parse(cached);
-        populateEntryBanner();
-        // Refresh cache silently in background
-        quizPromise = api("getQuiz", { quizId: QUIZ_ID })
-          .then(fresh => {
-            quiz = fresh;
-            localStorage.setItem(cacheKey, JSON.stringify(fresh));
-          }).catch(() => {});
-        return; // already have data — show entry immediately
-      } catch(e) { localStorage.removeItem(cacheKey); }
-    }
-
-    // No cache — fetch now in background while student fills in name
-    quizPromise = api("getQuiz", { quizId: QUIZ_ID })
-      .then(data => {
-        quiz = data;
-        localStorage.setItem(cacheKey, JSON.stringify(data));
-        populateEntryBanner();
-        // Hide loading indicator on banner if showing
-        const bl = document.getElementById("banner-loading");
-        if (bl) bl.style.display = "none";
-      })
-      .catch(e => {
-        const bl = document.getElementById("banner-loading");
-        if (bl) bl.textContent = "⚠️ Could not load quiz. Check your Quiz ID.";
-        showAlert("entry-alert", "Quiz not found or inactive. Check your Quiz ID.");
-      });
-
-    // Show a subtle loading indicator on the banner
-    document.getElementById("quiz-banner").style.display = "block";
-    document.getElementById("banner-title").textContent = "Loading quiz…";
-    document.getElementById("banner-meta").textContent  = "Please fill in your details while we load";
-    const bl = document.getElementById("banner-loading");
-    if (bl) {
-      bl.style.display = "block";
-      bl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--gold);font-size:12px;margin-top:6px;"><div style="width:14px;height:14px;border:2px solid var(--gold);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;"></div> Loading questions…</div>';
-    }
-  } else {
-    // No quiz ID in URL — show manual ID input
-    document.getElementById("entry-no-id").style.display = "block";
+  // 3. If no Quiz ID in URL, show the manual ID input box
+  if (!QUIZ_ID) {
+    var noIdEl = document.getElementById("entry-no-id");
+    if (noIdEl) noIdEl.style.display = "block";
+    return;
   }
+
+  // 4. If no backend configured, show error
+  if (!BACKEND) {
+    showAlert("entry-alert", "System not configured. Please contact your administrator.");
+    return;
+  }
+
+  // 5. Check local cache first — makes repeat visits instant
+  var cacheKey = "qcache_" + QUIZ_ID;
+  try {
+    var cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      quiz = JSON.parse(cached);
+      populateEntryBanner();
+      // Silently refresh cache in background
+      quizPromise = api("getQuiz", { quizId: QUIZ_ID })
+        .then(function(fresh) {
+          quiz = fresh;
+          localStorage.setItem(cacheKey, JSON.stringify(fresh));
+        }).catch(function() {});
+      return; // instant load from cache
+    }
+  } catch(e) {
+    localStorage.removeItem(cacheKey);
+  }
+
+  // 6. No cache — fetch in background while student types name
+  // Show a subtle loading indicator on the banner
+  var banner = document.getElementById("quiz-banner");
+  var bannerTitle = document.getElementById("banner-title");
+  var bannerMeta  = document.getElementById("banner-meta");
+  var bannerLoad  = document.getElementById("banner-loading");
+  if (banner) banner.style.display = "block";
+  if (bannerTitle) bannerTitle.textContent = "Loading quiz details…";
+  if (bannerMeta)  bannerMeta.textContent  = "Please enter your name while we load";
+  if (bannerLoad) {
+    bannerLoad.style.display = "block";
+    bannerLoad.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--gold);font-size:12px;margin-top:6px;"><div style="width:14px;height:14px;border:2px solid var(--gold);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;"></div>Fetching questions…</div>';
+  }
+
+  quizPromise = api("getQuiz", { quizId: QUIZ_ID })
+    .then(function(data) {
+      quiz = data;
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      populateEntryBanner();
+      if (bannerLoad) bannerLoad.style.display = "none";
+    })
+    .catch(function(e) {
+      if (bannerLoad) bannerLoad.style.display = "none";
+      showAlert("entry-alert", "Quiz not found. Please check your Quiz ID.");
+      if (bannerTitle) bannerTitle.textContent = "Quiz not found";
+    });
+
+  // 7. Warmup ping fired here so backend is warm by click time
+  setTimeout(function() {
+    if (BACKEND) {
+      fetch(BACKEND + "?action=ping", {
+        method: "POST", body: JSON.stringify({action:"ping"}), redirect:"follow"
+      }).catch(function(){});
+    }
+  }, 300);
 });
+
 
 function populateEntryBanner() {
   if (!quiz) return;
