@@ -672,7 +672,7 @@ body::before {
 
 <script>
 // ── Config (set via URL param or hardcode) ──────────────────
-const BACKEND = localStorage.getItem("qt_backend") || "";
+let BACKEND = localStorage.getItem("qt_backend") || "";
 const params  = new URLSearchParams(location.search);
 let   QUIZ_ID = params.get("id") || params.get("quiz") || "";
 
@@ -689,7 +689,7 @@ let watchInt   = null;
 let studentName= "";
 let certData   = {};
 
-const MIN_WATCH_SECS = 30; // students must watch at least 30s
+const MIN_WATCH_SECS = 0; // students must watch at least 30s
 
 // ── Screen helper ───────────────────────────────────────────
 function showScreen(name) {
@@ -719,83 +719,78 @@ var quizPromise = null;
 
 window.addEventListener("DOMContentLoaded", function() {
 
-  // 1. Resolve backend URL
-  if (!BACKEND) {
-    var stored = localStorage.getItem("qt_backend");
-    if (stored) BACKEND = stored;
-  }
+  // Resolve backend — must come before anything else
+  BACKEND = localStorage.getItem("qt_backend") || BACKEND || "";
 
-  // 2. Always show entry screen immediately — never stay on loading
+  // ── ALWAYS show entry form — no exceptions ──────────────────
+  // This is the very first thing we do. Loading screen disappears
+  // immediately. Everything else happens after.
   showScreen("entry");
-  clearTimeout(window._safetyTimer);
 
-  // 3. If no Quiz ID in URL, show the manual ID input box
+  // If no Quiz ID show manual input box
   if (!QUIZ_ID) {
-    var noIdEl = document.getElementById("entry-no-id");
-    if (noIdEl) noIdEl.style.display = "block";
+    var noId = document.getElementById("entry-no-id");
+    if (noId) noId.style.display = "block";
     return;
   }
 
-  // 4. If no backend configured, show error
+  // No backend set — show error gently
   if (!BACKEND) {
     showAlert("entry-alert", "System not configured. Please contact your administrator.");
     return;
   }
 
-  // 5. Check local cache first — makes repeat visits instant
-  var cacheKey = "qcache_" + QUIZ_ID;
+  // Check local cache — makes repeat visits instant
   try {
-    var cached = localStorage.getItem(cacheKey);
+    var cached = localStorage.getItem("qcache_" + QUIZ_ID);
     if (cached) {
       quiz = JSON.parse(cached);
       populateEntryBanner();
-      // Silently refresh cache in background
-      quizPromise = api("getQuiz", { quizId: QUIZ_ID })
+      // Refresh silently in background
+      api("getQuiz", { quizId: QUIZ_ID })
         .then(function(fresh) {
           quiz = fresh;
-          localStorage.setItem(cacheKey, JSON.stringify(fresh));
+          localStorage.setItem("qcache_" + QUIZ_ID, JSON.stringify(fresh));
         }).catch(function() {});
-      return; // instant load from cache
+      return;
     }
   } catch(e) {
-    localStorage.removeItem(cacheKey);
+    localStorage.removeItem("qcache_" + QUIZ_ID);
   }
 
-  // 6. No cache — fetch in background while student types name
-  // Show a subtle loading indicator on the banner
-  var banner = document.getElementById("quiz-banner");
-  var bannerTitle = document.getElementById("banner-title");
-  var bannerMeta  = document.getElementById("banner-meta");
-  var bannerLoad  = document.getElementById("banner-loading");
+  // Fetch in background while student fills name + gender
+  var banner    = document.getElementById("quiz-banner");
+  var bTitle    = document.getElementById("banner-title");
+  var bMeta     = document.getElementById("banner-meta");
+  var bLoad     = document.getElementById("banner-loading");
+
   if (banner) banner.style.display = "block";
-  if (bannerTitle) bannerTitle.textContent = "Loading quiz details…";
-  if (bannerMeta)  bannerMeta.textContent  = "Please enter your name while we load";
-  if (bannerLoad) {
-    bannerLoad.style.display = "block";
-    bannerLoad.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--gold);font-size:12px;margin-top:6px;"><div style="width:14px;height:14px;border:2px solid var(--gold);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;"></div>Fetching questions…</div>';
+  if (bTitle)  bTitle.textContent  = "Loading quiz details…";
+  if (bMeta)   bMeta.textContent   = "Please fill in your details below";
+  if (bLoad) {
+    bLoad.style.display = "block";
+    bLoad.innerHTML = "<div style='display:flex;align-items:center;gap:8px;color:var(--gold);font-size:12px;margin-top:6px;'><div style='width:14px;height:14px;border:2px solid var(--gold);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;'></div>Fetching questions…</div>";
   }
 
   quizPromise = api("getQuiz", { quizId: QUIZ_ID })
     .then(function(data) {
       quiz = data;
-      localStorage.setItem(cacheKey, JSON.stringify(data));
+      localStorage.setItem("qcache_" + QUIZ_ID, JSON.stringify(data));
       populateEntryBanner();
-      if (bannerLoad) bannerLoad.style.display = "none";
+      if (bLoad) bLoad.style.display = "none";
     })
-    .catch(function(e) {
-      if (bannerLoad) bannerLoad.style.display = "none";
+    .catch(function() {
+      if (bLoad) bLoad.style.display = "none";
       showAlert("entry-alert", "Quiz not found. Please check your Quiz ID.");
-      if (bannerTitle) bannerTitle.textContent = "Quiz not found";
     });
 
-  // 7. Warmup ping fired here so backend is warm by click time
+  // Warmup ping — fires 400ms after load so backend is warm by click time
   setTimeout(function() {
-    if (BACKEND) {
-      fetch(BACKEND + "?action=ping", {
-        method: "POST", body: JSON.stringify({action:"ping"}), redirect:"follow"
-      }).catch(function(){});
-    }
-  }, 300);
+    fetch(BACKEND + "?action=ping", {
+      method: "POST", body: JSON.stringify({ action: "ping" }), redirect: "follow"
+    }).catch(function() {});
+  }, 400);
+
 });
 
 
@@ -860,10 +855,9 @@ async function startQuiz() {
   questions = shuffle(quiz.questions).slice(0, 10);
   answers   = {};
 
-  // Show video first
-  document.getElementById("vid-title").textContent = quiz.videoTitle;
-  showScreen("video");
-  loadYouTube();
+  // Go straight to quiz — no video watch requirement
+  initQuiz();
+  showScreen("quiz");
 }
 
 // ── YouTube Player ──────────────────────────────────────────
@@ -930,6 +924,7 @@ function proceedToQuiz() {
   clearInterval(watchInt);
   if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
   initQuiz();
+  showScreen("quiz");
 }
 
 // ── Quiz logic ──────────────────────────────────────────────
