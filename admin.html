@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QuizTube Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:      #060a10;
+  --surface: #0a1020;
+  --card:    #0d1528;
+  --border:  #162035;
+  --gold:    #d4a843;
+  --gold2:   #f0c96a;
+  --text:    #dde4f0;
+  --muted:   #5a6a88;
+  --green:   #22c55e;
+  --red:     #ef4444;
+  --blue:    #3b82f6;
+  --r:       6px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── Login ── */
+#login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(212,168,67,.08) 0%,transparent 60%);
+}
+.login-box{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:48px 40px;width:100%;max-width:420px;
+  box-shadow:0 40px 80px rgba(0,0,0,.7);
+}
+.login-logo{text-align:center;margin-bottom:36px;}
+.login-logo .icon{
+  width:64px;height:64px;border-radius:50%;
+  border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;margin:0 auto 16px;
+  background:rgba(212,168,67,.08);
+}
+.login-logo h1{font-family:'Playfair Display',serif;font-size:26px;margin-bottom:4px;}
+.login-logo p{color:var(--muted);font-size:13px;}
+.badge-admin{
+  display:inline-block;background:rgba(212,168,67,.12);
+  border:1px solid rgba(212,168,67,.3);
+  color:var(--gold);font-size:10px;letter-spacing:2px;
+  padding:3px 10px;border-radius:20px;margin-top:6px;
+}
+
+/* ── Layout ── */
+#app{display:none;min-height:100vh;}
+.sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:240px;
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:100;
+  overflow-y:auto;
+}
+.sidebar-logo{
+  padding:24px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+}
+.sidebar-logo .mark{
+  width:36px;height:36px;border-radius:50%;
+  border:1.5px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  flex-shrink:0;
+}
+.sidebar-logo .name{font-family:'Playfair Display',serif;font-size:17px;color:var(--text);}
+.sidebar-logo .sub{font-size:10px;color:var(--muted);letter-spacing:1px;}
+
+.nav-section{padding:20px 12px 8px;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:var(--r);
+  cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;
+  transition:all .15s;margin:2px 8px;
+}
+.nav-item:hover{background:rgba(255,255,255,.04);color:var(--text);}
+.nav-item.active{background:rgba(212,168,67,.1);color:var(--gold);}
+.nav-item .icon{font-size:15px;width:20px;text-align:center;}
+
+.sidebar-footer{
+  margin-top:auto;padding:16px;border-top:1px solid var(--border);
+}
+.backend-status{
+  font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;
+}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
+.status-dot.ok{background:var(--green);}
+
+.main{margin-left:240px;padding:32px 36px;min-height:100vh;}
+
+.page{display:none;}
+.page.active{display:block;}
+
+/* ── Header ── */
+.page-header{margin-bottom:28px;}
+.page-title{font-family:'Playfair Display',serif;font-size:28px;margin-bottom:4px;}
+.page-sub{color:var(--muted);font-size:14px;}
+
+/* ── Cards ── */
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:28px;margin-bottom:20px;
+}
+.card-title{font-size:15px;font-weight:600;margin-bottom:4px;}
+.card-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+
+/* ── Stats row ── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:20px;
+}
+.stat-num{font-size:30px;font-weight:700;color:var(--gold);}
+.stat-lbl{font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:4px;}
+
+/* ── Form ── */
+.field{margin-bottom:16px;}
+.field label{
+  display:block;font-size:11px;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--gold);margin-bottom:7px;
+}
+.field input,.field select,.field textarea{
+  width:100%;padding:11px 14px;
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:var(--r);color:var(--text);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;
+  outline:none;transition:border-color .2s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);}
+.field textarea{resize:vertical;min-height:80px;}
+.field select option{background:var(--card);}
+.inline-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px 22px;border-radius:var(--r);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;
+  border:none;cursor:pointer;transition:all .2s;letter-spacing:.2px;
+}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(212,168,67,.3);}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.btn-danger:hover{background:rgba(239,68,68,.2);}
+.btn-green{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+.btn-sm{padding:7px 14px;font-size:12px;}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+
+/* ── Alert ── */
+.alert{padding:12px 16px;border-radius:var(--r);font-size:13px;margin-bottom:14px;display:none;}
+.alert.show{display:block;}
+.alert-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#fca5a5;}
+.alert-ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:#86efac;}
+.alert-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:#93c5fd;}
+
+/* ── Table ── */
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{
+  text-align:left;padding:12px 16px;
+  font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+td{padding:14px 16px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+
+/* ── Badges ── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.5px;}
+.badge-pass{background:rgba(34,197,94,.12);color:var(--green);}
+.badge-fail{background:rgba(239,68,68,.12);color:var(--red);}
+.badge-active{background:rgba(34,197,94,.12);color:var(--green);}
+.badge-inactive{background:rgba(239,68,68,.12);color:var(--red);}
+.badge-standard{background:rgba(212,168,67,.12);color:var(--gold);}
+.badge-webinar{background:rgba(59,130,246,.12);color:#60a5fa;}
+
+/* ── Share box ── */
+.share-box{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:16px;margin:12px 0;
+}
+.share-label{font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;}
+.share-url{
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  color:var(--gold);word-break:break-all;margin-bottom:10px;
+}
+.copy-row{display:flex;gap:8px;}
+
+/* ── Quiz ID display ── */
+.quiz-id-badge{
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;color:var(--gold);
+  background:rgba(212,168,67,.08);
+  border:1px solid rgba(212,168,67,.2);
+  padding:3px 10px;border-radius:4px;
+  letter-spacing:1px;
+}
+
+/* ── Progress ── */
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width .4s;}
+
+/* ── Loading ── */
+.spinner{
+  width:32px;height:32px;border:3px solid var(--border);
+  border-top-color:var(--gold);border-radius:50%;
+  animation:spin .7s linear infinite;margin:0 auto 12px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-state{text-align:center;padding:40px;color:var(--muted);}
+
+/* ── Setup panel ── */
+.setup-section{
+  background:rgba(212,168,67,.05);border:1px solid rgba(212,168,67,.15);
+  border-radius:10px;padding:20px;margin-bottom:20px;
+}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0;}
+.tab{
+  padding:10px 20px;cursor:pointer;font-size:13px;font-weight:500;
+  color:var(--muted);border-bottom:2px solid transparent;
+  transition:all .2s;margin-bottom:-1px;
+}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ── CSV upload ── */
+.upload-zone{
+  border:2px dashed var(--border);border-radius:var(--r);
+  padding:32px;text-align:center;cursor:pointer;
+  transition:border-color .2s;
+}
+.upload-zone:hover{border-color:var(--gold);}
+.upload-zone input{display:none;}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .sidebar{width:100%;height:auto;position:relative;}
+  .main{margin-left:0;}
+  .inline-fields{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon">🎬</div>
+      <h1>QuizTube</h1>
+      <p>Learning Management System</p>
+      <div class="badge-admin">ADMIN PANEL</div>
+    </div>
+
+    <div class="setup-section" id="setup-section">
+      <div style="font-size:11px;color:var(--gold);letter-spacing:1px;margin-bottom:10px;">⚙ BACKEND SETUP</div>
+      <div class="field" style="margin-bottom:10px;">
+        <label>Apps Script Web App URL</label>
+        <input type="url" id="backend-input" placeholder="https://script.google.com/macros/s/.../exec"/>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="testAndSaveBackend()">Test & Save Connection</button>
+      <div id="conn-result" style="margin-top:8px;font-size:12px;"></div>
+    </div>
+
+    <div class="field">
+      <label>Admin Password</label>
+      <input type="password" id="login-pwd" placeholder="Enter your admin password"
+             onkeydown="if(event.key==='Enter')login()"/>
+    </div>
+    <div id="login-alert" class="alert alert-err"></div>
+    <button class="btn btn-primary" style="width:100%;" onclick="login()">🔐 Sign In</button>
+  </div>
+</div>
+
+<!-- ══ APP ════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="mark">🎬</div>
+      <div>
+        <div class="name">QuizTube</div>
+        <div class="sub">ADMIN PANEL</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+      <span class="icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('create')" id="nav-create">
+      <span class="icon">✨</span> Create Quiz
+    </div>
+    <div class="nav-item" onclick="showPage('quizzes')" id="nav-quizzes">
+      <span class="icon">📚</span> All Quizzes
+    </div>
+
+    <div class="nav-section">Results</div>
+    <div class="nav-item" onclick="showPage('results')" id="nav-results">
+      <span class="icon">📋</span> Student Results
+    </div>
+    <div class="nav-item" onclick="showPage('analytics')" id="nav-analytics">
+      <span class="icon">📈</span> Analytics
+    </div>
+
+    <div class="nav-section">Settings</div>
+    <div class="nav-item" onclick="showPage('settings')" id="nav-settings">
+      <span class="icon">⚙️</span> Settings
+    </div>
+    <div class="nav-item" onclick="logout()">
+      <span class="icon">🚪</span> Sign Out
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="backend-status">
+        <div class="status-dot ok" id="status-dot"></div>
+        <span id="status-label">Connected</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+
+    <!-- ── Dashboard ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Overview of your QuizTube system</div>
+      </div>
+      <div class="stats-row" id="dash-stats">
+        <div class="stat-card"><div class="stat-num" id="stat-quizzes">—</div><div class="stat-lbl">TOTAL QUIZZES</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-attempts">—</div><div class="stat-lbl">TOTAL ATTEMPTS</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-passes">—</div><div class="stat-lbl">CERTIFICATES ISSUED</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-passrate">—</div><div class="stat-lbl">PASS RATE</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Recent Quizzes</div>
+        <div class="card-sub">Your most recently created quizzes</div>
+        <div id="dash-recent"></div>
+      </div>
+    </div>
+
+    <!-- ── Create Quiz ── -->
+    <div class="page" id="page-create">
+      <div class="page-header">
+        <div class="page-title">Create New Quiz</div>
+        <div class="page-sub">AI-generate or manually build a quiz from any YouTube video</div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('ai')">✨ AI Generate</div>
+        <div class="tab" onclick="switchTab('manual')">✍️ Manual Entry</div>
+        <div class="tab" onclick="switchTab('upload')">📤 Upload CSV</div>
+      </div>
+
+      <!-- AI Generate tab -->
+      <div class="tab-panel active" id="tab-ai">
+        <div class="card">
+          <div class="card-title">Generate Questions with AI</div>
+          <div class="card-sub">Paste a YouTube URL and AI builds your entire quiz in ~30 seconds</div>
+
+          <div class="field">
+            <label>YouTube Video URL</label>
+            <input type="url" id="ai-url" placeholder="https://www.youtube.com/watch?v=..." oninput="previewThumb()"/>
+          </div>
+          <div id="ai-thumb-wrap" style="display:none;margin-bottom:16px;border-radius:8px;overflow:hidden;">
+            <img id="ai-thumb" src="" style="width:100%;max-height:160px;object-fit:cover;"/>
+          </div>
+          <div class="field">
+            <label>Video Title / Topic</label>
+            <input type="text" id="ai-title" placeholder="e.g. Human Circulatory System — Class 10 Biology"/>
+          </div>
+          <div class="inline-fields">
+            <div class="field">
+              <label>Quiz Type</label>
+              <select id="ai-type">
+                <option value="standard">Standard Quiz</option>
+                <option value="webinar">Webinar / Live Session</option>
+                <option value="homework">Homework Assignment</option>
+                <option value="exam">Formal Exam</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Number of Questions</label>
+              <select id="ai-count">
+                <option value="10">10 Questions</option>
+                <option value="15" selected>15 Questions</option>
+                <option value="20">20 Questions</option>
+                <option value="25">25 Questions</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Your Name (optional)</label>
+            <input type="text" id="ai-teacher" placeholder="Teacher / Instructor name"/>
+          </div>
+
+          <div id="ai-alert" class="alert alert-err"></div>
+
+          <div id="ai-loading" style="display:none;text-align:center;padding:32px;">
+            <div class="spinner"></div>
+            <div style="color:var(--muted);font-size:14px;" id="ai-status">Generating questions…</div>
+            <div class="progress-bar" style="margin-top:16px;max-width:300px;margin-left:auto;margin-right:auto;">
+              <div class="progress-fill" id="ai-progress" style="width:0%"></div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="ai-btn" onclick="generateAI()">✨ Generate with AI</button>
+        </div>
+
+        <div id="ai-success" style="display:none;">
+          <div class="card" style="border-color:rgba(34,197,94,.3);">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+              <div style="font-size:32px;">🎉</div>
+              <div>
+                <div style="font-weight:600;font-size:16px;">Quiz Created Successfully!</div>
+                <div style="color:var(--muted);font-size:13px;" id="ai-success-meta">—</div>
+              </div>
+            </div>
+
+            <div class="share-box">
+              <div class="share-label">QUIZ ID — Share with students</div>
+              <div class="quiz-id-badge" id="new-quiz-id" style="font-size:22px;display:block;margin-bottom:10px;padding:12px;">—</div>
+              <div class="copy-row">
+                <button class="btn btn-outline btn-sm" onclick="copyQuizId()">📋 Copy ID</button>
+              </div>
+            </div>
+
+            <div class="share-box">
+              <div class="share-label">DIRECT STUDENT LINK — Send this link directly</div>
+              <div class="share-url" id="new-quiz-link">—</div>
+              <div class="copy-row">
+                <button class="btn btn-outline btn-sm" onclick="copyStudentLink()">🔗 Copy Link</button>
+                <button class="btn btn-outline btn-sm" onclick="openStudentLink()">↗ Open Preview</button>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+              <button class="btn btn-primary" onclick="previewBank()">👁 Preview Questions</button>
+              <button class="btn btn-outline" onclick="resetCreate()">+ Create Another</button>
+              <button class="btn btn-outline" onclick="showPage('quizzes')">📚 View All Quizzes</button>
+            </div>
+          </div>
+
+          <div id="bank-preview-wrap" style="display:none;">
+            <div style="font-size:11px;color:var(--gold);letter-spacing:2px;margin:20px 0 12px;">QUESTION BANK</div>
+            <div id="bank-preview-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manual Entry tab -->
+      <div class="tab-panel" id="tab-manual">
+        <div class="card">
+          <div class="card-title">Create Quiz Manually</div>
+          <div class="card-sub">First set up the quiz, then add questions one by one</div>
+
+          <div class="field">
+            <label>YouTube Video URL</label>
+            <input type="url" id="m-url" placeholder="https://www.youtube.com/watch?v=..."/>
+          </div>
+          <div class="field">
+            <label>Video Title / Topic</label>
+            <input type="text" id="m-title" placeholder="Quiz title"/>
+          </div>
+          <div class="inline-fields">
+            <div class="field">
+              <label>Quiz Type</label>
+              <select id="m-type">
+                <option value="standard">Standard</option>
+                <option value="webinar">Webinar</option>
+                <option value="homework">Homework</option>
+                <option value="exam">Exam</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Your Name</label>
+              <input type="text" id="m-teacher" placeholder="Teacher name"/>
+            </div>
+          </div>
+          <div id="m-alert" class="alert alert-err"></div>
+          <button class="btn btn-primary" id="m-create-btn" onclick="createManualQuiz()">Create Quiz Shell →</button>
+        </div>
+
+        <!-- Add questions section (appears after quiz created) -->
+        <div id="manual-add-section" style="display:none;">
+          <div class="card" style="border-color:rgba(212,168,67,.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+              <div>
+                <div class="card-title">Add Questions</div>
+                <div class="card-sub">Quiz ID: <span class="quiz-id-badge" id="manual-quiz-id">—</span></div>
+              </div>
+              <div id="manual-q-count" style="color:var(--gold);font-size:24px;font-weight:700;">0 questions</div>
+            </div>
+
+            <div class="field">
+              <label>Question</label>
+              <textarea id="mq-question" placeholder="Type the question here…" rows="3"></textarea>
+            </div>
+            <div class="field">
+              <label>Option A (Correct Answer)</label>
+              <input type="text" id="mq-a" placeholder="Correct answer"/>
+            </div>
+            <div class="field">
+              <label>Option B</label>
+              <input type="text" id="mq-b" placeholder="Wrong option"/>
+            </div>
+            <div class="field">
+              <label>Option C</label>
+              <input type="text" id="mq-c" placeholder="Wrong option"/>
+            </div>
+            <div class="field">
+              <label>Option D</label>
+              <input type="text" id="mq-d" placeholder="Wrong option"/>
+            </div>
+            <div class="inline-fields">
+              <div class="field">
+                <label>Explanation</label>
+                <input type="text" id="mq-exp" placeholder="Why is option A correct?"/>
+              </div>
+              <div class="field">
+                <label>Video Timestamp (seconds)</label>
+                <input type="number" id="mq-ts" placeholder="e.g. 120 for 2:00" min="0"/>
+              </div>
+            </div>
+            <div id="mq-alert" class="alert alert-err"></div>
+            <button class="btn btn-primary" onclick="addManualQuestion()">+ Add Question</button>
+          </div>
+
+          <div class="share-box">
+            <div class="share-label">STUDENT LINK</div>
+            <div class="share-url" id="manual-student-link">—</div>
+            <button class="btn btn-outline btn-sm" onclick="copyManualLink()">🔗 Copy Link</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload CSV tab -->
+      <div class="tab-panel" id="tab-upload">
+        <div class="card">
+          <div class="card-title">Upload Questions via CSV</div>
+          <div class="card-sub">Upload a spreadsheet of questions to an existing quiz</div>
+
+          <div class="field">
+            <label>Target Quiz ID</label>
+            <input type="text" id="upload-quiz-id" placeholder="QZ-XXXXXXXX"
+                   style="font-family:'JetBrains Mono',monospace;letter-spacing:2px;text-transform:uppercase;"/>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;">Enter the Quiz ID you want to add questions to</div>
+          </div>
+
+          <div style="margin-bottom:20px;">
+            <div class="share-label" style="font-size:11px;color:var(--gold);letter-spacing:1px;margin-bottom:8px;">CSV FORMAT</div>
+            <pre style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;font-size:11px;color:var(--muted);overflow-x:auto;line-height:1.8;">question,option_a,option_b,option_c,option_d,correct_index,explanation,timestamp
+What is photosynthesis?,Food making,Breathing,Digestion,Excretion,0,Plants make food using sunlight,45
+What gas is released?,Oxygen,Nitrogen,CO2,Hydrogen,0,Plants release oxygen during photosynthesis,120</pre>
+            <div style="font-size:12px;color:var(--muted);margin-top:8px;">correct_index: 0=A, 1=B, 2=C, 3=D | timestamp in seconds</div>
+          </div>
+
+          <div class="upload-zone" onclick="document.getElementById('csv-file').click()">
+            <input type="file" id="csv-file" accept=".csv" onchange="handleCSV(event)"/>
+            <div style="font-size:32px;margin-bottom:8px;">📄</div>
+            <div style="font-weight:500;margin-bottom:4px;">Click to upload CSV file</div>
+            <div style="font-size:13px;color:var(--muted);">Or drag and drop your .csv file here</div>
+          </div>
+
+          <div id="csv-preview" style="display:none;margin-top:16px;">
+            <div style="font-size:13px;color:var(--gold);margin-bottom:10px;" id="csv-count">0 questions found</div>
+            <div id="csv-alert" class="alert alert-err"></div>
+            <button class="btn btn-primary" onclick="uploadCSV()">📤 Upload Questions</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── All Quizzes ── -->
+    <div class="page" id="page-quizzes">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div class="page-title">All Quizzes</div>
+          <div class="page-sub">Manage, share, activate or delete your quizzes</div>
+        </div>
+        <button class="btn btn-primary" onclick="showPage('create')">+ New Quiz</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div id="quizzes-loading" class="loading-state"><div class="spinner"></div>Loading…</div>
+        <div id="quizzes-table-wrap" style="display:none;">
+          <table>
+            <thead>
+              <tr>
+                <th>Quiz</th><th>ID</th><th>Type</th><th>Questions</th>
+                <th>Attempts</th><th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="quizzes-body"></tbody>
+          </table>
+        </div>
+        <div id="quizzes-empty" class="loading-state" style="display:none;">
+          No quizzes yet. <a onclick="showPage('create')" style="color:var(--gold);cursor:pointer;">Create your first quiz →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Results ── -->
+    <div class="page" id="page-results">
+      <div class="page-header">
+        <div class="page-title">Student Results</div>
+        <div class="page-sub">View all student submissions and certificates</div>
+      </div>
+
+      <div class="field" style="max-width:300px;margin-bottom:20px;">
+        <label>Filter by Quiz</label>
+        <select id="results-filter" onchange="loadResults()">
+          <option value="">All Quizzes</option>
+        </select>
+      </div>
+
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div id="results-loading" class="loading-state"><div class="spinner"></div>Loading…</div>
+        <div id="results-table-wrap" style="display:none;">
+          <table>
+            <thead>
+              <tr><th>Student</th><th>Quiz</th><th>Score</th><th>Result</th><th>Time</th><th>Video Watched</th><th>Certificate</th><th>Date</th></tr>
+            </thead>
+            <tbody id="results-body"></tbody>
+          </table>
+        </div>
+        <div id="results-empty" class="loading-state" style="display:none;">No results yet.</div>
+      </div>
+    </div>
+
+    <!-- ── Analytics ── -->
+    <div class="page" id="page-analytics">
+      <div class="page-header">
+        <div class="page-title">Analytics</div>
+        <div class="page-sub">Performance overview across all quizzes</div>
+      </div>
+      <div id="analytics-content">
+        <div class="loading-state"><div class="spinner"></div>Loading analytics…</div>
+      </div>
+    </div>
+
+    <!-- ── Settings ── -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div class="page-title">Settings</div>
+        <div class="page-sub">Configure your QuizTube system</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Backend Connection</div>
+        <div class="card-sub">Apps Script Web App URL</div>
+        <div class="field">
+          <label>Web App URL</label>
+          <input type="url" id="settings-backend" placeholder="https://script.google.com/macros/s/.../exec"/>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save & Test</button>
+        <div id="settings-alert" class="alert alert-ok" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Student Portal URL</div>
+        <div class="card-sub">Share this base URL with students — they'll add their Quiz ID</div>
+        <div class="share-box">
+          <div class="share-label">BASE URL</div>
+          <div class="share-url" id="settings-student-url">—</div>
+          <button class="btn btn-outline btn-sm" onclick="copyBaseUrl()">📋 Copy</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Minimum Watch Time</div>
+        <div class="card-sub">Students must watch this many seconds before starting the quiz</div>
+        <div class="field">
+          <label>Seconds (default: 30)</label>
+          <input type="number" id="min-watch" value="30" min="0" max="600"/>
+        </div>
+        <div style="font-size:12px;color:var(--muted);">Note: Change this value in quiz.html line: const MIN_WATCH_SECS = 30</div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ── State ───────────────────────────────────────────────────
+let BACKEND  = localStorage.getItem("qt_backend") || "";
+let PASSWORD = "";
+let allQuizzes = [];
+let allResults = [];
+let csvParsed  = [];
+let manualQuizId = "";
+let newQuizId  = "";
+
+// Pre-fill backend input
+document.getElementById("backend-input").value = BACKEND;
+document.getElementById("settings-backend").value = BACKEND;
+updateStudentUrl();
+
+// ── API ─────────────────────────────────────────────────────
+async function api(action, body={}) {
+  if (!BACKEND) throw new Error("Backend URL not set");
+  const resp = await fetch(BACKEND + "?action=" + action, {
+    method: "POST",
+    body:   JSON.stringify({ action, password: PASSWORD, ...body }),
+    redirect: "follow"
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ── Auth ────────────────────────────────────────────────────
+async function testAndSaveBackend() {
+  const url = document.getElementById("backend-input").value.trim();
+  if (!url) return;
+  BACKEND = url;
+  localStorage.setItem("qt_backend","");
+  const el = document.getElementById("conn-result");
+  el.textContent = "Testing…";
+  try {
+    const resp = await fetch(url+"?action=ping",{method:"POST",body:JSON.stringify({action:"ping"}),redirect:"follow"});
+    const d = await resp.json();
+    if (d.ok) {
+      localStorage.setItem("qt_backend", url);
+      el.style.color = "#86efac";
+      el.textContent = "✅ Connected! Now enter your password.";
+    } else {
+      el.style.color = "#fca5a5";
+      el.textContent = "❌ Connected but unexpected response.";
+    }
+  } catch(e) {
+    el.style.color = "#fca5a5";
+    el.textContent = "❌ " + e.message;
+  }
+}
+
+async function login() {
+  const pwd = document.getElementById("login-pwd").value;
+  if (!pwd) { showAlert("login-alert","Enter your password."); return; }
+  if (!BACKEND) { showAlert("login-alert","Set and test your backend URL first."); return; }
+  PASSWORD = pwd;
+  try {
+    await api("listQuizzes");
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    loadDashboard();
+  } catch(e) {
+    if (e.message === "Unauthorized") {
+      showAlert("login-alert","❌ Wrong password.");
+    } else {
+      showAlert("login-alert","❌ " + e.message);
+    }
+    PASSWORD = "";
+  }
+}
+
+function logout() {
+  PASSWORD = "";
+  document.getElementById("login-screen").style.display = "flex";
+  document.getElementById("app").style.display = "none";
+}
+
+// ── Navigation ───────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  document.getElementById("page-" + name).classList.add("active");
+  const nav = document.getElementById("nav-" + name);
+  if (nav) nav.classList.add("active");
+
+  if (name === "quizzes")   loadQuizzes();
+  if (name === "results")   loadResults();
+  if (name === "analytics") loadAnalytics();
+  if (name === "dashboard") loadDashboard();
+  if (name === "settings")  { document.getElementById("settings-backend").value = BACKEND; updateStudentUrl(); }
+}
+
+// ── Dashboard ────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [qData, rData] = await Promise.all([api("listQuizzes"), api("getAllResults")]);
+    allQuizzes = qData.quizzes || [];
+    allResults = rData.results || [];
+
+    const attempts = allResults.length;
+    const passes   = allResults.filter(r => r.passed === "YES").length;
+    const passRate = attempts > 0 ? Math.round((passes/attempts)*100) : 0;
+
+    document.getElementById("stat-quizzes").textContent  = allQuizzes.length;
+    document.getElementById("stat-attempts").textContent = attempts;
+    document.getElementById("stat-passes").textContent   = passes;
+    document.getElementById("stat-passrate").textContent = passRate + "%";
+
+    const recent = allQuizzes.slice(-5).reverse();
+    document.getElementById("dash-recent").innerHTML = recent.length === 0
+      ? '<div style="color:var(--muted);font-size:14px;">No quizzes yet.</div>'
+      : `<div class="table-wrap"><table>
+          <thead><tr><th>Title</th><th>Type</th><th>Questions</th><th>Attempts</th><th>Actions</th></tr></thead>
+          <tbody>${recent.map(q => `
+            <tr>
+              <td><div style="font-weight:500">${q.videoTitle}</div></td>
+              <td><span class="badge badge-${q.quizType||'standard'}">${q.quizType||'standard'}</span></td>
+              <td>${q.numQuestions}</td>
+              <td>${q.attempts||0}</td>
+              <td><button class="btn btn-outline btn-sm" onclick="copyLink('${q.quizId}')">🔗 Share</button></td>
+            </tr>`).join("")}
+          </tbody></table></div>`;
+  } catch(e) {
+    console.warn("Dashboard load error:", e.message);
+  }
+}
+
+// ── Quiz Generation ──────────────────────────────────────────
+function previewThumb() {
+  const url = document.getElementById("ai-url").value;
+  const vid = extractVideoId(url);
+  const wrap = document.getElementById("ai-thumb-wrap");
+  if (vid) {
+    document.getElementById("ai-thumb").src = `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
+    wrap.style.display = "block";
+  } else wrap.style.display = "none";
+}
+
+async function generateAI() {
+  const url   = document.getElementById("ai-url").value.trim();
+  const title = document.getElementById("ai-title").value.trim();
+  const type  = document.getElementById("ai-type").value;
+  const count = document.getElementById("ai-count").value;
+  const teach = document.getElementById("ai-teacher").value.trim();
+
+  if (!url)   { showAlert("ai-alert","Enter a YouTube URL."); return; }
+  if (!title) { showAlert("ai-alert","Enter the video title."); return; }
+
+  document.getElementById("ai-alert").className = "alert";
+  document.getElementById("ai-btn").style.display = "none";
+  document.getElementById("ai-loading").style.display = "block";
+
+  const msgs = ["Analysing video topic…","Crafting questions…","Adding timestamps…","Almost done…"];
+  let mi = 0, pct = 0;
+  const ticker = setInterval(() => {
+    document.getElementById("ai-status").textContent = msgs[Math.min(mi++, msgs.length-1)];
+    pct = Math.min(pct+12, 90);
+    document.getElementById("ai-progress").style.width = pct + "%";
+  }, 3000);
+
+  try {
+    const res = await api("generateQuiz", {
+      videoUrl: url, videoTitle: title, teacherName: teach,
+      numQuestions: parseInt(count), quizType: type
+    });
+    clearInterval(ticker);
+    document.getElementById("ai-progress").style.width = "100%";
+    setTimeout(() => {
+      document.getElementById("ai-loading").style.display = "none";
+      showAISuccess(res);
+    }, 400);
+  } catch(e) {
+    clearInterval(ticker);
+    document.getElementById("ai-loading").style.display = "none";
+    document.getElementById("ai-btn").style.display = "inline-flex";
+    showAlert("ai-alert", "Error: " + e.message);
+  }
+}
+
+function showAISuccess(res) {
+  newQuizId = res.quizId;
+  document.getElementById("new-quiz-id").textContent = res.quizId;
+  document.getElementById("new-quiz-link").textContent = getStudentLink(res.quizId);
+  document.getElementById("ai-success-meta").textContent =
+    res.numQuestions + " questions · " + (document.getElementById("ai-type").value) + " quiz";
+  document.getElementById("ai-success").style.display = "block";
+  document.getElementById("ai-success").scrollIntoView({ behavior:"smooth" });
+}
+
+function copyQuizId()     { copyText(newQuizId, "Quiz ID copied!"); }
+function copyStudentLink(){ copyText(getStudentLink(newQuizId), "Student link copied!"); }
+function openStudentLink(){ window.open(getStudentLink(newQuizId), "_blank"); }
+
+async function previewBank() {
+  const wrap = document.getElementById("bank-preview-wrap");
+  if (wrap.style.display === "block") { wrap.style.display = "none"; return; }
+  wrap.style.display = "block";
+  const list = document.getElementById("bank-preview-list");
+  list.innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
+  try {
+    const data = await api("getQuiz", { quizId: newQuizId });
+    list.innerHTML = data.questions.map((q,i) => `
+      <div class="card" style="padding:16px;margin-bottom:12px;">
+        <div style="font-weight:600;margin-bottom:8px;">Q${i+1}. ${q.question}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+          ${q.options.map((o,oi)=>`
+            <span style="font-size:12px;padding:3px 10px;border-radius:12px;
+              background:${oi===q.correct?'rgba(34,197,94,.1)':'rgba(255,255,255,.04)'};
+              color:${oi===q.correct?'var(--green)':'var(--muted)'};
+              border:1px solid ${oi===q.correct?'rgba(34,197,94,.3)':'transparent'}">
+              ${['A','B','C','D'][oi]}. ${o}
+            </span>`).join("")}
+        </div>
+        <div style="font-size:12px;color:var(--muted);">⏱ ${Math.floor(q.timestamp/60)}:${String(q.timestamp%60).padStart(2,'0')} · ${q.explanation}</div>
+      </div>`).join("");
+  } catch(e) {
+    list.innerHTML = `<div style="color:var(--red)">${e.message}</div>`;
+  }
+}
+
+function resetCreate() {
+  document.getElementById("ai-url").value = "";
+  document.getElementById("ai-title").value = "";
+  document.getElementById("ai-thumb-wrap").style.display = "none";
+  document.getElementById("ai-btn").style.display = "inline-flex";
+  document.getElementById("ai-success").style.display = "none";
+  document.getElementById("bank-preview-wrap").style.display = "none";
+}
+
+// ── Tabs ─────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach((t,i) => {
+    t.className = "tab" + (["ai","manual","upload"][i]===name?" active":"");
+  });
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+}
+
+// ── Manual quiz ──────────────────────────────────────────────
+async function createManualQuiz() {
+  const url   = document.getElementById("m-url").value.trim();
+  const title = document.getElementById("m-title").value.trim();
+  const type  = document.getElementById("m-type").value;
+  const teach = document.getElementById("m-teacher").value.trim();
+  if (!url || !title) { showAlert("m-alert","URL and title are required."); return; }
+
+  const btn = document.getElementById("m-create-btn");
+  btn.disabled = true; btn.textContent = "Creating…";
+
+  try {
+    // Create a quiz with one placeholder question (backend needs at least one)
+    const placeholder = [{
+      id:1, question:"Placeholder — replace via Add Question",
+      options:["A","B","C","D"], correct:0,
+      explanation:"Add real questions below.", timestamp:0, topic:"General"
+    }];
+    const res = await api("generateQuiz", {
+      videoUrl: url, videoTitle: title, teacherName: teach,
+      numQuestions: 1, quizType: type,
+    });
+
+    // Overwrite with empty — use editQuiz + we stored quiz already
+    manualQuizId = res.quizId;
+    document.getElementById("manual-quiz-id").textContent = res.quizId;
+    document.getElementById("manual-add-section").style.display = "block";
+    document.getElementById("manual-student-link").textContent = getStudentLink(res.quizId);
+    document.getElementById("manual-add-section").scrollIntoView({behavior:"smooth"});
+  } catch(e) {
+    showAlert("m-alert", e.message);
+  }
+  btn.disabled = false; btn.textContent = "Create Quiz Shell →";
+}
+
+async function addManualQuestion() {
+  const q   = document.getElementById("mq-question").value.trim();
+  const a   = document.getElementById("mq-a").value.trim();
+  const b   = document.getElementById("mq-b").value.trim();
+  const c   = document.getElementById("mq-c").value.trim();
+  const d   = document.getElementById("mq-d").value.trim();
+  const exp = document.getElementById("mq-exp").value.trim();
+  const ts  = parseInt(document.getElementById("mq-ts").value) || 0;
+
+  if (!q||!a||!b||!c||!d) { showAlert("mq-alert","Fill in the question and all 4 options."); return; }
+
+  // Shuffle options so A isn't always correct
+  const shuffled = shuffle([
+    {text:a,correct:true},{text:b,correct:false},{text:c,correct:false},{text:d,correct:false}
+  ]);
+  const correctIdx = shuffled.findIndex(o=>o.correct);
+
+  const question = {
+    question: q,
+    options:  shuffled.map(o=>o.text),
+    correct:  correctIdx,
+    explanation: exp || "Option A is correct.",
+    timestamp: ts, topic: "General"
+  };
+
+  try {
+    const res = await api("addQuestion", { quizId: manualQuizId, question });
+    document.getElementById("manual-q-count").textContent = res.numQuestions + " questions";
+    // Clear form
+    ["mq-question","mq-a","mq-b","mq-c","mq-d","mq-exp","mq-ts"].forEach(id => {
+      document.getElementById(id).value = "";
+    });
+    showAlert("mq-alert","✅ Question added! Total: " + res.numQuestions);
+    document.getElementById("mq-alert").className = "alert alert-ok show";
+  } catch(e) {
+    showAlert("mq-alert", e.message);
+  }
+}
+
+function copyManualLink() { copyText(getStudentLink(manualQuizId), "Link copied!"); }
+
+// ── CSV Upload ────────────────────────────────────────────────
+function handleCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const lines = e.target.result.split("\n").filter(l=>l.trim());
+    csvParsed = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCSVLine(lines[i]);
+      if (cols.length < 6) continue;
+      csvParsed.push({
+        question:    cols[0],
+        options:     [cols[1],cols[2],cols[3],cols[4]],
+        correct:     parseInt(cols[5])||0,
+        explanation: cols[6]||"",
+        timestamp:   parseInt(cols[7])||0,
+        topic:       "General"
+      });
+    }
+    document.getElementById("csv-count").textContent = csvParsed.length + " questions found";
+    document.getElementById("csv-preview").style.display = "block";
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVLine(line) {
+  const result = []; let current = ""; let inQuotes = false;
+  for (const ch of line) {
+    if (ch==='"') { inQuotes=!inQuotes; }
+    else if (ch===',' && !inQuotes) { result.push(current.trim()); current=""; }
+    else { current+=ch; }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+async function uploadCSV() {
+  const quizId = document.getElementById("upload-quiz-id").value.trim().toUpperCase();
+  if (!quizId) { showAlert("csv-alert","Enter the Quiz ID."); return; }
+  if (!csvParsed.length) { showAlert("csv-alert","No questions parsed."); return; }
+  try {
+    const res = await api("uploadQuestions", { quizId, questions: csvParsed });
+    document.getElementById("csv-alert").className = "alert alert-ok show";
+    document.getElementById("csv-alert").textContent = `✅ Added ${res.added} questions. Total: ${res.total}`;
+  } catch(e) {
+    showAlert("csv-alert", e.message);
+  }
+}
+
+// ── All Quizzes page ─────────────────────────────────────────
+async function loadQuizzes() {
+  document.getElementById("quizzes-loading").style.display = "block";
+  document.getElementById("quizzes-table-wrap").style.display = "none";
+  document.getElementById("quizzes-empty").style.display = "none";
+  try {
+    const data = await api("listQuizzes");
+    allQuizzes = (data.quizzes||[]).reverse();
+    document.getElementById("quizzes-loading").style.display = "none";
+    if (!allQuizzes.length) { document.getElementById("quizzes-empty").style.display = "block"; return; }
+    document.getElementById("quizzes-table-wrap").style.display = "block";
+    document.getElementById("quizzes-body").innerHTML = allQuizzes.map(q => `
+      <tr>
+        <td>
+          <div style="font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q.videoTitle}</div>
+          <div style="font-size:11px;color:var(--muted)">${new Date(q.createdAt).toLocaleDateString()}</div>
+        </td>
+        <td><span class="quiz-id-badge">${q.quizId}</span></td>
+        <td><span class="badge badge-${q.quizType||'standard'}">${q.quizType||'standard'}</span></td>
+        <td>${q.numQuestions}</td>
+        <td>${q.attempts||0} / ${q.passes||0} passed</td>
+        <td><span class="badge ${q.active==='YES'?'badge-active':'badge-inactive'}">${q.active==='YES'?'Active':'Inactive'}</span></td>
+        <td>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="copyLink('${q.quizId}')">🔗</button>
+            <button class="btn btn-outline btn-sm" onclick="toggleQuiz('${q.quizId}','${q.active}')">
+              ${q.active==='YES'?'⏸ Pause':'▶ Activate'}
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteQuiz('${q.quizId}')">🗑</button>
+          </div>
+        </td>
+      </tr>`).join("");
+  } catch(e) {
+    document.getElementById("quizzes-loading").textContent = "Error: " + e.message;
+  }
+}
+
+async function toggleQuiz(quizId, current) {
+  const active = current !== "YES";
+  try {
+    await api("toggleQuiz", { quizId, active });
+    loadQuizzes();
+  } catch(e) { alert("Error: " + e.message); }
+}
+
+async function deleteQuiz(quizId) {
+  if (!confirm("Delete quiz " + quizId + "? This cannot be undone.")) return;
+  try {
+    await api("deleteQuiz", { quizId });
+    loadQuizzes();
+  } catch(e) { alert("Error: " + e.message); }
+}
+
+// ── Results ──────────────────────────────────────────────────
+async function loadResults() {
+  document.getElementById("results-loading").style.display = "block";
+  document.getElementById("results-table-wrap").style.display = "none";
+  document.getElementById("results-empty").style.display = "none";
+
+  try {
+    const [rData, qData] = await Promise.all([api("getAllResults"), api("listQuizzes")]);
+    allResults = rData.results || [];
+    allQuizzes = (qData.quizzes||[]);
+
+    // Populate filter dropdown
+    const filter = document.getElementById("results-filter");
+    filter.innerHTML = '<option value="">All Quizzes</option>' +
+      allQuizzes.map(q=>`<option value="${q.quizId}">${q.videoTitle}</option>`).join("");
+
+    renderResultsTable(allResults, allQuizzes);
+  } catch(e) {
+    document.getElementById("results-loading").textContent = "Error: " + e.message;
+  }
+}
+
+function renderResultsTable(results, quizzes) {
+  document.getElementById("results-loading").style.display = "none";
+  const filterVal = document.getElementById("results-filter").value;
+  const filtered  = filterVal ? results.filter(r=>r.quizId===filterVal) : results;
+
+  if (!filtered.length) { document.getElementById("results-empty").style.display = "block"; return; }
+
+  const quizMap = {};
+  quizzes.forEach(q => quizMap[q.quizId] = q.videoTitle);
+
+  document.getElementById("results-table-wrap").style.display = "block";
+  document.getElementById("results-body").innerHTML = filtered.slice().reverse().map(r => `
+    <tr>
+      <td><strong>${r.studentName}</strong></td>
+      <td style="font-size:12px;color:var(--muted)">${quizMap[r.quizId]||r.quizId}</td>
+      <td>${r.score}/${r.total} <span style="color:var(--muted)">(${r.percentage}%)</span></td>
+      <td><span class="badge ${r.passed==='YES'?'badge-pass':'badge-fail'}">${r.passed==='YES'?'✓ Passed':'✗ Failed'}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${formatTime(r.timeTaken||0)}</td>
+      <td style="font-size:12px;color:var(--muted)">${r.watchTime||0}s</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">${r.certId||'—'}</td>
+      <td style="font-size:12px;color:var(--muted)">${r.submittedAt?new Date(r.submittedAt).toLocaleDateString():''}</td>
+    </tr>`).join("");
+}
+
+// ── Analytics ─────────────────────────────────────────────────
+async function loadAnalytics() {
+  try {
+    const [rData, qData] = await Promise.all([api("getAllResults"), api("listQuizzes")]);
+    const results = rData.results || [];
+    const quizzes = qData.quizzes || [];
+    const passes  = results.filter(r=>r.passed==="YES").length;
+    const totalWatchTime = results.reduce((s,r)=>s+(parseInt(r.watchTime)||0),0);
+    const avgScore = results.length ? Math.round(results.reduce((s,r)=>s+(parseInt(r.percentage)||0),0)/results.length) : 0;
+
+    document.getElementById("analytics-content").innerHTML = `
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num">${results.length}</div><div class="stat-lbl">TOTAL ATTEMPTS</div></div>
+        <div class="stat-card"><div class="stat-num">${passes}</div><div class="stat-lbl">CERTIFICATES ISSUED</div></div>
+        <div class="stat-card"><div class="stat-num">${avgScore}%</div><div class="stat-lbl">AVG SCORE</div></div>
+        <div class="stat-card"><div class="stat-num">${Math.round(totalWatchTime/60)}m</div><div class="stat-lbl">TOTAL VIDEO WATCHED</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Quiz Performance Breakdown</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Quiz</th><th>Attempts</th><th>Pass Rate</th><th>Avg Score</th><th>Watch Time</th></tr></thead>
+            <tbody>
+              ${quizzes.map(q => {
+                const qResults = results.filter(r=>r.quizId===q.quizId);
+                const qPasses  = qResults.filter(r=>r.passed==="YES").length;
+                const qAvg     = qResults.length ? Math.round(qResults.reduce((s,r)=>s+(parseInt(r.percentage)||0),0)/qResults.length) : 0;
+                const qWatch   = qResults.reduce((s,r)=>s+(parseInt(r.watchTime)||0),0);
+                return `<tr>
+                  <td style="font-weight:500">${q.videoTitle}</td>
+                  <td>${qResults.length}</td>
+                  <td>${qResults.length?Math.round((qPasses/qResults.length)*100):0}%</td>
+                  <td>${qAvg}%</td>
+                  <td>${Math.round(qWatch/60)}m</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  } catch(e) {
+    document.getElementById("analytics-content").innerHTML = `<div style="color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+// ── Settings ─────────────────────────────────────────────────
+async function saveSettings() {
+  const url = document.getElementById("settings-backend").value.trim();
+  if (!url) return;
+  BACKEND = url;
+  localStorage.setItem("qt_backend", url);
+  updateStudentUrl();
+  const el = document.getElementById("settings-alert");
+  el.className = "alert alert-ok show";
+  el.textContent = "✅ Saved. Connection active.";
+}
+
+function updateStudentUrl() {
+  const base = location.href.replace("admin.html","quiz.html");
+  document.getElementById("settings-student-url") &&
+    (document.getElementById("settings-student-url").textContent = base + "?id=QZ-XXXXXXXX");
+}
+
+function copyBaseUrl() {
+  const base = location.href.replace("admin.html","quiz.html");
+  copyText(base, "Base URL copied!");
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function getStudentLink(quizId) {
+  return location.href.replace("admin.html","quiz.html") + "?id=" + quizId;
+}
+
+function copyLink(quizId) { copyText(getStudentLink(quizId), "Student link copied!"); }
+
+function copyText(text, msg) {
+  navigator.clipboard.writeText(text).then(() => {
+    const t = document.createElement("div");
+    t.textContent = "✅ " + msg;
+    t.style.cssText = "position:fixed;bottom:24px;right:24px;background:#22c55e;color:#000;padding:10px 20px;border-radius:8px;font-weight:600;z-index:9999;font-size:13px;animation:fadeUp .3s ease";
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  });
+}
+
+function showAlert(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = "alert alert-err show";
+}
+
+function formatTime(secs) {
+  return Math.floor(secs/60)+"m "+String(secs%60).padStart(2,"0")+"s";
+}
+
+function shuffle(arr) { return [...arr].sort(()=>Math.random()-.5); }
+
+function extractVideoId(url) {
+  const p = [/youtube\.com\/watch\?v=([^&\n?#]+)/,/youtu\.be\/([^&\n?#]+)/,/youtube\.com\/embed\/([^&\n?#]+)/];
+  for (const r of p) { const m=url.match(r); if(m) return m[1]; }
+  return null;
+}
+
+// Store backend for quiz.html to use
+function saveBackendForStudents() {
+  localStorage.setItem("qt_backend", BACKEND);
+}
+window.addEventListener("load", saveBackendForStudents);
+</script>
+</body>
+</html>
