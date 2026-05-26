@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <title>QuizTube — Take Your Quiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
@@ -40,14 +43,15 @@ body::before {
 }
 
 /* ── Screen system ── */
-.screen { display: none; position: relative; z-index: 1; }
-.screen.active { display: block; }
+.screen { display: none !important; position: relative; z-index: 1; }
+.screen.active { display: block !important; }
+.screen.active#screen-loading,
+.screen.active#screen-entry,
+.screen.active#screen-video,
+.screen.active#screen-cert { display: flex !important; }
 
 /* ── Loading screen ── */
-#screen-loading {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  flex-direction: column; gap: 20px;
-}
+#screen-loading { min-height: 100vh; align-items: center; justify-content: center; flex-direction: column; gap: 20px; }
 .logo-mark {
   width: 64px; height: 64px;
   border: 2px solid var(--gold);
@@ -68,11 +72,7 @@ body::before {
 .loading-text { color: var(--muted); font-size: 14px; letter-spacing: 1px; }
 
 /* ── Entry screen ── */
-#screen-entry {
-  min-height: 100vh;
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px;
-}
+#screen-entry { min-height: 100vh; align-items: center; justify-content: center; padding: 24px; }
 .entry-card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -160,11 +160,7 @@ body::before {
 .alert-ok  { background: rgba(46,204,113,.1); border: 1px solid rgba(46,204,113,.3); color: var(--green); }
 
 /* ── Video watch screen ── */
-#screen-video {
-  min-height: 100vh;
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; padding: 24px;
-}
+#screen-video { min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
 .video-container { width: 100%; max-width: 860px; }
 .video-header { margin-bottom: 20px; text-align: center; }
 .video-header h2 {
@@ -353,8 +349,9 @@ body::before {
 /* ── Certificate screen ── */
 #screen-cert {
   min-height: 100vh;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 32px 20px;
   background: #05080f;
 }
@@ -468,15 +465,25 @@ body::before {
 </head>
 <body>
 
+<!-- Bulletproof: immediately ensure loading is hidden, entry shown -->
+<script>
+(function() {
+  try {
+    var s = document.getElementById && document.getElementById("screen-loading");
+    if (s) s.style.display = "none";
+  } catch(e){}
+})();
+</script>
+
 <!-- ── Loading ── -->
-<div id="screen-loading" class="screen active">
+<div id="screen-loading" class="screen">
   <div class="logo-mark">🎬</div>
   <div class="loading-ring"></div>
   <div class="loading-text">Loading your quiz…</div>
 </div>
 
 <!-- ── Entry ── -->
-<div id="screen-entry" class="screen">
+<div id="screen-entry" class="screen active">
   <div class="entry-card">
     <div class="entry-logo">
       <div class="mark">🎬</div>
@@ -1142,6 +1149,24 @@ function showAlert(id, msg) {
   el.textContent = msg;
   el.className   = "alert alert-err show";
 }
+</script>
+
+<!-- Final safety net: ensure entry is visible after 500ms no matter what -->
+<script>
+setTimeout(function() {
+  var loading = document.getElementById("screen-loading");
+  var entry   = document.getElementById("screen-entry");
+  if (loading) loading.style.display = "none";
+  if (entry && !entry.classList.contains("active")) {
+    entry.classList.add("active");
+    entry.style.display = "flex";
+  }
+  var params = new URLSearchParams(location.search);
+  if (!params.get("id") && !params.get("quiz")) {
+    var noId = document.getElementById("entry-no-id");
+    if (noId) noId.style.display = "block";
+  }
+}, 500);
 </script>
 </body>
 </html>
